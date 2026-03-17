@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oracle V5.1</title>
+
+<style>
+body{
+ margin:0;
+ font-family:Arial;
+ background:#0f172a;
+ color:#e5e7eb;
+}
+
+.topbar{
+ display:flex;
+ justify-content:space-around;
+ padding:10px;
+ background:#111827;
+}
+
+.card{
+ background:#1f2937;
+ padding:8px;
+ border-radius:8px;
+ text-align:center;
+}
+
+.container{
+ padding:10px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+}
+
+.chart{
+ height:300px;
+ border-radius:10px;
+ overflow:hidden;
+}
+
+.aiBox{
+ background:#111827;
+ padding:12px;
+ border-radius:10px;
+}
+
+.chat{
+ display:flex;
+ gap:8px;
+}
+
+input{
+ flex:1;
+ padding:10px;
+ border-radius:8px;
+ border:none;
+ outline:none;
+ background:#1f2937;
+ color:white;
+}
+
+button{
+ padding:10px 14px;
+ border:none;
+ border-radius:8px;
+ background:#22c55e;
+ color:black;
+ font-weight:bold;
+}
+
+.messages{
+ font-size:12px;
+ max-height:120px;
+ overflow:auto;
+ margin-bottom:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+ <div class="card" id="nifty">NIFTY</div>
+ <div class="card" id="gold">GOLD</div>
+</div>
+
+<div class="container">
+
+<div class="chart" id="chart"></div>
+
+<div class="aiBox" id="aiBox">
+🤖 Oracle AI<br><br>
+Loading...
+</div>
+
+<div class="aiBox">
+<div class="messages" id="messages"></div>
+
+<div class="chat">
+<input id="input" placeholder="Ask AI (e.g. Nifty bias?)">
+<button onclick="send()">➤</button>
+</div>
+</div>
+
+</div>
+
+<script>
+
+// PRICE
+async function prices(){
+ try{
+  const r=await fetch("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5ENSEI,XAUUSD=X");
+  const d=await r.json();
+  const res=d.quoteResponse.result;
+
+  document.getElementById("nifty").innerHTML="NIFTY<br>"+res[0].regularMarketPrice;
+  document.getElementById("gold").innerHTML="GOLD<br>"+res[1].regularMarketPrice;
+
+  window.price=res[0].regularMarketPrice;
+
+ }catch(e){}
+}
+
+// SIGNAL
+function signal(){
+ let p=window.price||0;
+ let prev=window.prev||p;
+
+ let sig="WAIT";
+ if(p>prev*1.001) sig="BUY";
+ if(p<prev*0.999) sig="SELL";
+
+ window.prev=p;
+
+ document.getElementById("aiBox").innerHTML=
+ "🤖 Oracle AI<br><br>"+
+ "Mode: Scalping<br>"+
+ "Signal: "+sig+"<br>"+
+ "Price: "+p;
+}
+
+// CHAT AI
+function send(){
+ let input=document.getElementById("input").value;
+ if(!input) return;
+
+ let msg=document.getElementById("messages");
+ msg.innerHTML+="<div>🧑 "+input+"</div>";
+
+ let reply="";
+
+ if(input.toLowerCase().includes("bias")){
+   reply="Market is "+(window.prev>window.price?"Bearish":"Bullish");
+ }
+ else if(input.toLowerCase().includes("buy")){
+   reply="Wait for confirmation before buying.";
+ }
+ else if(input.toLowerCase().includes("gold")){
+   reply="Gold depends on USD strength. Watch momentum.";
+ }
+ else{
+   reply="Analyzing market...";
+ }
+
+ msg.innerHTML+="<div>🤖 "+reply+"</div>";
+ document.getElementById("input").value="";
+}
+
+// CHART
+function loadChart(){
+ const s=document.createElement("script");
+ s.src="https://s3.tradingview.com/tv.js";
+ s.onload=function(){
+  new TradingView.widget({
+   container_id:"chart",
+   symbol:"NSE:NIFTY",
+   interval:"5",
+   theme:"dark"
+  });
+ };
+ document.body.appendChild(s);
+}
+
+setInterval(prices,5000);
+setInterval(signal,5000);
+
+prices();
+signal();
+loadChart();
+
+</script>
+
+</body>
+</html>
